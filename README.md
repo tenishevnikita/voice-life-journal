@@ -141,17 +141,62 @@ class JournalEntry:
 
 ---
 
-## 🚀 Roadmap
+## 🚀 Quick Start
+
+### Prerequisites
+- Python 3.11+
+- Poetry (package manager)
+- Telegram Bot Token (from @BotFather)
+- OpenAI API Key (for Whisper)
+
+### Setup
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/tenishevnikita/voice-life-journal.git
+cd voice-life-journal
+
+# 2. Install dependencies
+poetry install
+
+# 3. Configure environment
+cp .env.example .env
+# Edit .env and add your tokens:
+# - TELEGRAM_BOT_TOKEN (get from @BotFather)
+# - OPENAI_API_KEY (get from OpenAI platform)
+
+# 4. Run the bot
+poetry run python -m src.bot.main
+```
+
+### Running Tests
+
+```bash
+# Run all tests
+poetry run pytest
+
+# Run with coverage report
+poetry run pytest --cov=src --cov-report=html
+
+# Run specific test file
+poetry run pytest tests/unit/test_handlers.py -v
+```
+
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guide.
+
+---
+
+## 📈 Roadmap
 
 See [project-status.md](./project-status.md) for detailed tracking.
 
-### Phase 1: Foundation ✅ In Progress
+### Phase 1: Foundation ✅ Complete
 - [x] #1 Project vision
 - [x] #2 Documentation (README, project-status, agents, CLAUDE)
-- [ ] #3 Tech stack + project structure
+- [x] #3 Tech stack (Python 3.11+) + project structure
 
-### Phase 2: MVP Bot
-- [ ] #4 Telegram bot (commands, message handling)
+### Phase 2: MVP Bot 🔄 In Progress
+- [x] #4 Telegram bot (commands, message handling)
 - [ ] #5 Whisper integration
 - [ ] #6 Database persistence
 

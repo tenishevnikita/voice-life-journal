@@ -1,8 +1,8 @@
 # 📊 Project Status: Voice Life Journal
 
 **Last Updated:** 2026-01-13
-**Current Phase:** 🏗 Foundation - Complete, Moving to MVP
-**Overall Progress:** 🟡 30% (3/8 milestones)
+**Current Phase:** 🏗 MVP Bot Development
+**Overall Progress:** 🟢 50% (4/8 milestones)
 
 ---
 
@@ -14,7 +14,8 @@
 - ✅ Issue #1: Project idea and vision documented
 - ✅ Issue #2: Project documentation setup (COMPLETED)
 - ✅ Issue #3: Project structure and tech stack selection (COMPLETED)
-- 🔄 Issue #4: Telegram bot initialization (NEXT)
+- ✅ Issue #4: Telegram bot initialization (COMPLETED)
+- 🔄 Issue #5: Whisper API integration (NEXT)
 
 ---
 
@@ -25,8 +26,8 @@
 - [x] #2 Documentation structure (project-status.md, agents.md, README.md, CLAUDE.md)
 - [x] #3 Tech stack selection (Python 3.11+) and project scaffolding
 
-### Phase 2: MVP Bot (Issues #4-6) - ETA: Core Functionality
-- [ ] #4 Telegram bot initialization (commands, message handling)
+### Phase 2: MVP Bot (Issues #4-6) - 🔄 In Progress (33%)
+- [x] #4 Telegram bot initialization (commands, message handling)
 - [ ] #5 Whisper API integration for voice transcription
 - [ ] #6 Database setup and journal entry persistence
 
@@ -44,7 +45,7 @@
 | Milestone | Status | Completion |
 |-----------|--------|------------|
 | **M1:** Documentation & Structure | ✅ Complete | 100% |
-| **M2:** Working Telegram Bot | 🔄 In Progress | 0% |
+| **M2:** Working Telegram Bot | ✅ Complete | 100% |
 | **M3:** Voice Transcription | ⏳ Planned | 0% |
 | **M4:** Data Persistence | ⏳ Planned | 0% |
 | **M5:** Summary Features | ⏳ Planned | 0% |
@@ -68,6 +69,8 @@
 | 2026-01-13 | **Python 3.11+ as tech stack** | pytest mandatory, OpenAI SDK, aiogram 3.x, rapid MVP, concise code |
 | 2026-01-13 | Poetry for dependency management | Modern Python packaging, lockfile, dev dependencies separation |
 | 2026-01-13 | Pre-commit hooks with conventional commits | Enforce code quality and commit standards automatically |
+| 2026-01-13 | aiogram 3.x for Telegram bot | Modern async framework, router-based handlers, clean architecture |
+| 2026-01-13 | Long polling over webhooks | Simpler for MVP, no HTTPS setup required, easier local development |
 
 ---
 
@@ -85,6 +88,8 @@
 1. ✅ ~~Complete project documentation (#2)~~ **DONE**
 2. ✅ ~~Choose tech stack (Python 3.11+) (#3)~~ **DONE**
 3. ✅ ~~Initialize project structure (#3)~~ **DONE**
-4. Initialize Telegram bot with aiogram (#4)
-5. Implement /start command handler (#4)
-6. Setup voice message reception (#4)
+4. ✅ ~~Initialize Telegram bot with aiogram (#4)~~ **DONE**
+5. ✅ ~~Implement /start command handler (#4)~~ **DONE**
+6. ✅ ~~Setup voice message reception (#4)~~ **DONE**
+7. Integrate Whisper API for transcription (#5)
+8. Setup database and save entries (#6)
