@@ -136,7 +136,7 @@ See [project-status.md](./project-status.md) for detailed tracking.
 
 ### Phase 1: Foundation ✅ In Progress
 - [x] #1 Project vision
-- [ ] #2 Documentation (this file)
+- [x] #2 Documentation (README, project-status, agents, CLAUDE)
 - [ ] #3 Tech stack + project structure
 
 ### Phase 2: MVP Bot
@@ -155,7 +155,9 @@ See [project-status.md](./project-status.md) for detailed tracking.
 
 ## 🧬 Development Principles
 
-This project follows **AI Coding Course** methodology:
+This project follows **AI Coding Course** methodology.
+
+**📖 For detailed development rules, see [CLAUDE.md](./CLAUDE.md) - the constitution for AI agents.**
 
 ### 1. Vibe Coding
 - Code is disposable, specifications are permanent
@@ -206,6 +208,7 @@ voice-life-journal/
 ├── tests/
 │   ├── unit/
 │   └── integration/
+├── CLAUDE.md                # AI Coding Constitution
 ├── .env.example
 ├── .gitignore
 └── README.md                # You are here
@@ -235,9 +238,11 @@ voice-life-journal/
 ## 🤝 Contributing
 
 This is a personal project, but if you're interested:
-1. Read [agents.md](./docs/agents.md) for development workflow
-2. Check [project-status.md](./docs/project-status.md) for current tasks
-3. Open an issue or PR following Conventional Commits
+1. Read [CLAUDE.md](./CLAUDE.md) for AI Coding Constitution and development rules
+2. Read [agents.md](./agents.md) for AI agent roles and workflow
+3. Check [project-status.md](./project-status.md) for current tasks and roadmap
+4. All issues include test descriptions in natural language (pytest framework)
+5. Open an issue or PR following Conventional Commits format
 
 ---
 
