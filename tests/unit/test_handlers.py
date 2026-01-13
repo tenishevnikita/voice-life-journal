@@ -1,11 +1,12 @@
 """Unit tests for bot handlers."""
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiogram.types import Message, User, Voice
 
-from src.bot.handlers import cmd_start, handle_text, handle_voice, is_user_allowed, save_journal_entry
+from src.bot.handlers import cmd_start, cmd_summary, handle_text, handle_voice, is_user_allowed, save_journal_entry
 from src.services.transcription import (
     TranscriptionAPIError,
     TranscriptionError,
@@ -263,3 +264,170 @@ class TestTextMessageHandler:
             mock_text_message.answer.assert_called_once()
             call_args = mock_text_message.answer.call_args
             assert "not authorized" in call_args[0][0].lower()
+
+
+class TestSummaryCommand:
+    """Test /summary command handler - BDD: User requests summary of entries."""
+
+    @pytest.mark.asyncio
+    async def test_summary_command_with_entries(self, mock_message: Message) -> None:
+        """
+        Given пользователь написал 3 записи за последнюю неделю
+        When пользователь отправляет /summary week
+        Then бот возвращает список записей с датами и количеством
+        """
+        mock_message.text = "/summary week"
+
+        # Mock CommandObject
+        mock_command = MagicMock()
+        mock_command.args = "week"
+
+        # Mock entries
+        now = datetime.now(timezone.utc)
+        mock_entries = [
+            MagicMock(
+                created_at=now - timedelta(days=1),
+                transcription="Entry from yesterday",
+            ),
+            MagicMock(
+                created_at=now - timedelta(days=3),
+                transcription="Entry from 3 days ago",
+            ),
+        ]
+
+        mock_entry_service = MagicMock()
+        mock_entry_service.get_entries_by_date_range = AsyncMock(return_value=mock_entries)
+
+        with patch("src.bot.handlers.get_session") as mock_get_session:
+            # Setup async context manager for session
+            mock_session = MagicMock()
+            mock_get_session.return_value.__aenter__.return_value = mock_session
+
+            # Patch EntryService constructor
+            with patch("src.bot.handlers.EntryService", return_value=mock_entry_service):
+                await cmd_summary(mock_message, mock_command)
+
+        # Verify response contains summary
+        mock_message.answer.assert_called_once()
+        call_args = mock_message.answer.call_args[0][0]
+        assert "Summary" in call_args
+        assert "Total entries: 2" in call_args
+        assert "Entry from yesterday" in call_args
+        assert "Entry from 3 days ago" in call_args
+
+    @pytest.mark.asyncio
+    async def test_summary_command_no_entries(self, mock_message: Message) -> None:
+        """
+        Given пользователь не имеет записей
+        When пользователь отправляет /summary
+        Then бот возвращает сообщение об отсутствии записей
+        """
+        mock_message.text = "/summary"
+
+        mock_command = MagicMock()
+        mock_command.args = None  # Default to week
+
+        mock_entry_service = MagicMock()
+        mock_entry_service.get_entries_by_date_range = AsyncMock(return_value=[])
+
+        with patch("src.bot.handlers.get_session") as mock_get_session:
+            mock_session = MagicMock()
+            mock_get_session.return_value.__aenter__.return_value = mock_session
+
+            with patch("src.bot.handlers.EntryService", return_value=mock_entry_service):
+                await cmd_summary(mock_message, mock_command)
+
+        # Verify response indicates no entries
+        call_args = mock_message.answer.call_args[0][0]
+        assert "No entries found" in call_args
+
+    @pytest.mark.asyncio
+    async def test_summary_command_invalid_period(self, mock_message: Message) -> None:
+        """Test that invalid period triggers error message."""
+        mock_message.text = "/summary invalid"
+
+        mock_command = MagicMock()
+        mock_command.args = "invalid"
+
+        await cmd_summary(mock_message, mock_command)
+
+        # Should send error message without querying database
+        call_args = mock_message.answer.call_args[0][0]
+        assert "Invalid period" in call_args
+        assert "today" in call_args.lower()
+        assert "week" in call_args.lower()
+        assert "month" in call_args.lower()
+
+    @pytest.mark.asyncio
+    async def test_summary_command_period_today(self, mock_message: Message) -> None:
+        """Test /summary today calculates correct date range."""
+        mock_message.text = "/summary today"
+
+        mock_command = MagicMock()
+        mock_command.args = "today"
+
+        mock_entry_service = MagicMock()
+        mock_entry_service.get_entries_by_date_range = AsyncMock(return_value=[])
+
+        with patch("src.bot.handlers.get_session") as mock_get_session:
+            mock_session = MagicMock()
+            mock_get_session.return_value.__aenter__.return_value = mock_session
+
+            with patch("src.bot.handlers.EntryService", return_value=mock_entry_service):
+                await cmd_summary(mock_message, mock_command)
+
+        # Verify date range passed to service
+        call_kwargs = mock_entry_service.get_entries_by_date_range.call_args[1]
+        start_date = call_kwargs["start_date"]
+        end_date = call_kwargs["end_date"]
+
+        # Should be today (midnight to now)
+        assert start_date.hour == 0
+        assert start_date.minute == 0
+        assert (end_date - start_date).days == 0
+
+    @pytest.mark.asyncio
+    async def test_summary_command_unauthorized_user(self, mock_message: Message) -> None:
+        """Test that unauthorized users cannot access summary."""
+        mock_command = MagicMock()
+        mock_command.args = None
+
+        with patch("src.bot.handlers.config.allowed_user_ids", [99999999]):
+            await cmd_summary(mock_message, mock_command)
+
+        call_args = mock_message.answer.call_args[0][0]
+        assert "not authorized" in call_args.lower()
+
+    @pytest.mark.asyncio
+    async def test_summary_command_truncates_long_entries(self, mock_message: Message) -> None:
+        """Test that long transcriptions are truncated in summary."""
+        mock_message.text = "/summary"
+
+        mock_command = MagicMock()
+        mock_command.args = None
+
+        # Create entry with long transcription (> 100 chars)
+        long_text = "A" * 150
+        mock_entries = [
+            MagicMock(
+                created_at=datetime.now(timezone.utc),
+                transcription=long_text,
+            ),
+        ]
+
+        mock_entry_service = MagicMock()
+        mock_entry_service.get_entries_by_date_range = AsyncMock(return_value=mock_entries)
+
+        with patch("src.bot.handlers.get_session") as mock_get_session:
+            mock_session = MagicMock()
+            mock_get_session.return_value.__aenter__.return_value = mock_session
+
+            with patch("src.bot.handlers.EntryService", return_value=mock_entry_service):
+                await cmd_summary(mock_message, mock_command)
+
+        # Verify response has truncated text
+        call_args = mock_message.answer.call_args[0][0]
+        # Should be truncated to 97 chars + "..."
+        assert "AAA..." in call_args
+        # Original long text should not be fully present
+        assert long_text not in call_args

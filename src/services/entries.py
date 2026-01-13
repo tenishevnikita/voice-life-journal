@@ -2,6 +2,7 @@
 
 import logging
 import uuid
+from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import delete, func, select
@@ -136,3 +137,36 @@ class EntryService:
             select(func.count()).select_from(Entry).where(Entry.user_id == user_id)
         )
         return result.scalar() or 0
+
+    async def get_entries_by_date_range(
+        self,
+        user_id: int,
+        start_date: datetime,
+        end_date: datetime,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> list[Entry]:
+        """Get entries for a user within a date range.
+
+        Args:
+            user_id: Telegram user ID.
+            start_date: Start of date range (inclusive).
+            end_date: End of date range (inclusive).
+            limit: Maximum number of entries to return.
+            offset: Number of entries to skip.
+
+        Returns:
+            List of entries within date range, ordered by created_at descending.
+        """
+        result = await self._session.execute(
+            select(Entry)
+            .where(
+                Entry.user_id == user_id,
+                Entry.created_at >= start_date,
+                Entry.created_at <= end_date,
+            )
+            .order_by(Entry.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        )
+        return list(result.scalars().all())

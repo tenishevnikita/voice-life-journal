@@ -8,7 +8,7 @@ Then в БД создается новая запись с transcription, user_i
 """
 
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
@@ -230,3 +230,156 @@ class TestEntryServiceCount:
         """Should return 0 for user with no entries."""
         count = await entry_service.count_entries_for_user(99999999)
         assert count == 0
+
+
+class TestEntryServiceDateRange:
+    """Tests for getting entries by date range - BDD: When пользователь запрашивает summary."""
+
+    async def test_get_entries_by_date_range_filters_correctly(
+        self,
+        entry_service: EntryService,
+        test_session: AsyncSession,
+    ):
+        """
+        Given пользователь написал 5 записей за последнюю неделю
+        When пользователь запрашивает записи за период
+        Then возвращаются только записи в этом периоде
+        """
+        user_id = 12345678
+        now = datetime.now(timezone.utc)
+
+        # Create entries at different times
+        # Entry 1: 2 days ago (should be in week range)
+        entry1 = Entry(
+            user_id=user_id,
+            transcription="Entry from 2 days ago",
+        )
+        test_session.add(entry1)
+        await test_session.flush()
+        # Manually set created_at
+        entry1.created_at = now - timedelta(days=2)
+
+        # Entry 2: 5 days ago (should be in week range)
+        entry2 = Entry(
+            user_id=user_id,
+            transcription="Entry from 5 days ago",
+        )
+        test_session.add(entry2)
+        await test_session.flush()
+        entry2.created_at = now - timedelta(days=5)
+
+        # Entry 3: 10 days ago (should NOT be in 7-day range)
+        entry3 = Entry(
+            user_id=user_id,
+            transcription="Entry from 10 days ago",
+        )
+        test_session.add(entry3)
+        await test_session.flush()
+        entry3.created_at = now - timedelta(days=10)
+
+        await test_session.commit()
+
+        # Query for last 7 days
+        start_date = now - timedelta(days=7)
+        end_date = now
+        entries = await entry_service.get_entries_by_date_range(
+            user_id=user_id,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        # Should return only entries from last 7 days
+        assert len(entries) == 2
+        transcriptions = [e.transcription for e in entries]
+        assert "Entry from 2 days ago" in transcriptions
+        assert "Entry from 5 days ago" in transcriptions
+        assert "Entry from 10 days ago" not in transcriptions
+
+    async def test_get_entries_by_date_range_filters_by_user(
+        self,
+        entry_service: EntryService,
+        test_session: AsyncSession,
+    ):
+        """Should return entries only for specified user."""
+        now = datetime.now(timezone.utc)
+        start_date = now - timedelta(days=7)
+
+        # Create entries for different users
+        entry1 = Entry(user_id=12345678, transcription="User 1 entry")
+        test_session.add(entry1)
+        await test_session.flush()
+        entry1.created_at = now - timedelta(days=1)
+
+        entry2 = Entry(user_id=99999999, transcription="User 2 entry")
+        test_session.add(entry2)
+        await test_session.flush()
+        entry2.created_at = now - timedelta(days=1)
+
+        await test_session.commit()
+
+        # Query for user 1
+        entries = await entry_service.get_entries_by_date_range(
+            user_id=12345678,
+            start_date=start_date,
+            end_date=now,
+        )
+
+        assert len(entries) == 1
+        assert entries[0].user_id == 12345678
+
+    async def test_get_entries_by_date_range_empty_result(
+        self,
+        entry_service: EntryService,
+    ):
+        """Should return empty list when no entries in date range."""
+        now = datetime.now(timezone.utc)
+        start_date = now - timedelta(days=7)
+        end_date = now
+
+        entries = await entry_service.get_entries_by_date_range(
+            user_id=12345678,
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+        assert entries == []
+
+    async def test_get_entries_by_date_range_ordered_descending(
+        self,
+        entry_service: EntryService,
+        test_session: AsyncSession,
+    ):
+        """Entries should be returned in descending order (newest first)."""
+        user_id = 12345678
+        now = datetime.now(timezone.utc)
+
+        # Create entries at different times
+        entry1 = Entry(user_id=user_id, transcription="Oldest")
+        test_session.add(entry1)
+        await test_session.flush()
+        entry1.created_at = now - timedelta(days=5)
+
+        entry2 = Entry(user_id=user_id, transcription="Middle")
+        test_session.add(entry2)
+        await test_session.flush()
+        entry2.created_at = now - timedelta(days=3)
+
+        entry3 = Entry(user_id=user_id, transcription="Newest")
+        test_session.add(entry3)
+        await test_session.flush()
+        entry3.created_at = now - timedelta(days=1)
+
+        await test_session.commit()
+
+        start_date = now - timedelta(days=7)
+        entries = await entry_service.get_entries_by_date_range(
+            user_id=user_id,
+            start_date=start_date,
+            end_date=now,
+        )
+
+        # Should be in descending order (newest first)
+        assert len(entries) == 3
+        assert entries[0].transcription == "Newest"
+        assert entries[1].transcription == "Middle"
+        assert entries[2].transcription == "Oldest"

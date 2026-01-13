@@ -1,9 +1,10 @@
 """Telegram bot message handlers."""
 
 import logging
+from datetime import datetime, timedelta, timezone
 
 from aiogram import Bot, Router
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from aiogram.types import Message
 
 from src.config import config
@@ -80,12 +81,105 @@ Just send me a voice message anytime, and I'll:
 
 **Commands:**
 /start - Show this message
-/summary - Get summary of your entries (coming soon)
+/summary [period] - Get summary of your entries
+  • today - entries from today
+  • week - last 7 days (default)
+  • month - last 30 days
 
 **Ready?** Just send me a voice message and let your thoughts flow! 🌊
 """
 
     await message.answer(welcome_message, parse_mode="Markdown")
+
+
+@router.message(Command("summary"))
+async def cmd_summary(message: Message, command: CommandObject) -> None:
+    """Handle /summary command to show entries for a period.
+
+    Usage: /summary [period]
+    Period options: today, week, month (default: week)
+    """
+    user_id = message.from_user.id if message.from_user else None
+    username = message.from_user.username if message.from_user else "Unknown"
+
+    logger.info(f"User {user_id} ({username}) requested summary")
+
+    if user_id and not await is_user_allowed(user_id):
+        await message.answer("🚫 Sorry, you are not authorized to use this bot.")
+        logger.warning(f"Unauthorized user {user_id} ({username}) tried to access summary")
+        return
+
+    # Parse period argument (default: week)
+    period = "week"
+    if command.args:
+        period = command.args.strip().lower()
+        if period not in ["today", "week", "month"]:
+            await message.answer(
+                "⚠️ Invalid period. Use: `today`, `week`, or `month`\n\n"
+                "Example: `/summary week`",
+                parse_mode="Markdown",
+            )
+            return
+
+    # Calculate date range based on period
+    now = datetime.now(timezone.utc)
+    if period == "today":
+        start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        end_date = now
+        period_label = "today"
+    elif period == "week":
+        start_date = now - timedelta(days=7)
+        end_date = now
+        period_label = "last 7 days"
+    elif period == "month":
+        start_date = now - timedelta(days=30)
+        end_date = now
+        period_label = "last 30 days"
+    else:
+        # Should not reach here due to validation above
+        await message.answer("⚠️ Invalid period.")
+        return
+
+    # Fetch entries from database
+    try:
+        async with get_session() as session:
+            entry_service = EntryService(session)
+            entries = await entry_service.get_entries_by_date_range(
+                user_id=user_id,
+                start_date=start_date,
+                end_date=end_date,
+            )
+
+        # Handle empty results
+        if not entries:
+            await message.answer(
+                f"📭 No entries found for {period_label}.\n\n"
+                "Send a voice message to create your first entry!"
+            )
+            return
+
+        # Format and send summary
+        summary_text = f"📊 **Summary for {period_label}**\n\n"
+        summary_text += f"Total entries: {len(entries)}\n\n"
+
+        for entry in entries:
+            # Format date as "Jan 14, 15:30"
+            entry_date = entry.created_at.strftime("%b %d, %H:%M")
+            # Truncate long transcriptions
+            transcription = entry.transcription
+            if len(transcription) > 100:
+                transcription = transcription[:97] + "..."
+
+            summary_text += f"**{entry_date}**\n{transcription}\n\n"
+
+        await message.answer(summary_text, parse_mode="Markdown")
+        logger.info(f"Sent summary to user {user_id}: {len(entries)} entries for {period}")
+
+    except Exception as e:
+        logger.error(f"Error fetching summary for user {user_id}: {e}", exc_info=True)
+        await message.answer(
+            "❌ Failed to fetch summary. Please try again later."
+        )
 
 
 @router.message(lambda message: message.voice is not None)
