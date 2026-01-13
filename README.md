@@ -145,7 +145,7 @@ class JournalEntry:
 
 ### Prerequisites
 - Python 3.11+
-- Poetry (package manager)
+- uv (package manager) - [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
 - Telegram Bot Token (from @BotFather)
 - OpenAI API Key (for Whisper)
 
@@ -157,7 +157,7 @@ git clone https://github.com/tenishevnikita/voice-life-journal.git
 cd voice-life-journal
 
 # 2. Install dependencies
-poetry install
+uv sync
 
 # 3. Configure environment
 cp .env.example .env
@@ -166,20 +166,20 @@ cp .env.example .env
 # - OPENAI_API_KEY (get from OpenAI platform)
 
 # 4. Run the bot
-poetry run python -m src.bot.main
+uv run python -m src.bot.main
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-poetry run pytest
+uv run pytest
 
 # Run with coverage report
-poetry run pytest --cov=src --cov-report=html
+uv run pytest --cov=src --cov-report=html
 
 # Run specific test file
-poetry run pytest tests/unit/test_handlers.py -v
+uv run pytest tests/unit/test_handlers.py -v
 ```
 
 See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guide.
@@ -266,7 +266,7 @@ voice-life-journal/
 ├── README.md                # Project overview (you are here)
 ├── project-status.md        # Roadmap and current status
 ├── agents.md                # AI agent roles
-├── pyproject.toml           # Poetry dependencies
+├── pyproject.toml           # Project dependencies (uv)
 ├── .env.example             # Environment variables template
 ├── .gitignore               # Git ignore rules
 └── .pre-commit-config.yaml  # Git hooks configuration

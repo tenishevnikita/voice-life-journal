@@ -7,21 +7,24 @@ Quick start guide for developers working on Voice Life Journal.
 ## 📋 Prerequisites
 
 - Python 3.11 or higher
-- Poetry (Python package manager)
+- uv (Python package manager) - [Install uv](https://docs.astral.sh/uv/getting-started/installation/)
 - Git
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Install Poetry
+### 1. Install uv
 
 ```bash
 # macOS/Linux
-curl -sSL https://install.python-poetry.org | python3 -
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Or via pip
-pip install poetry
+pip install uv
+
+# Or via Homebrew
+brew install uv
 ```
 
 ### 2. Clone and Setup
@@ -31,11 +34,8 @@ pip install poetry
 git clone https://github.com/tenishevnikita/voice-life-journal.git
 cd voice-life-journal
 
-# Install dependencies
-poetry install
-
-# Activate virtual environment
-poetry shell
+# Install dependencies (automatically creates and manages virtual environment)
+uv sync
 ```
 
 ### 3. Setup Environment Variables
@@ -53,11 +53,11 @@ cp .env.example .env
 
 ```bash
 # Install pre-commit hooks
-poetry run pre-commit install
-poetry run pre-commit install --hook-type commit-msg
+uv run pre-commit install
+uv run pre-commit install --hook-type commit-msg
 
 # Test hooks (optional)
-poetry run pre-commit run --all-files
+uv run pre-commit run --all-files
 ```
 
 ---
@@ -66,16 +66,16 @@ poetry run pre-commit run --all-files
 
 ```bash
 # Run all tests
-poetry run pytest
+uv run pytest
 
 # Run with coverage
-poetry run pytest --cov=src --cov-report=html
+uv run pytest --cov=src --cov-report=html
 
 # Run specific test file
-poetry run pytest tests/unit/test_database.py
+uv run pytest tests/unit/test_database.py
 
 # Run with verbose output
-poetry run pytest -v
+uv run pytest -v
 ```
 
 ---
@@ -86,27 +86,27 @@ poetry run pytest -v
 
 ```bash
 # Format code with Black
-poetry run black src/ tests/
+uv run black src/ tests/
 
 # Check formatting without changes
-poetry run black --check src/ tests/
+uv run black --check src/ tests/
 ```
 
 ### Linting
 
 ```bash
 # Run Ruff linter
-poetry run ruff check src/ tests/
+uv run ruff check src/ tests/
 
 # Auto-fix issues
-poetry run ruff check --fix src/ tests/
+uv run ruff check --fix src/ tests/
 ```
 
 ### Type Checking
 
 ```bash
 # Run MyPy type checker
-poetry run mypy src/
+uv run mypy src/
 ```
 
 ---
@@ -115,7 +115,7 @@ poetry run mypy src/
 
 ```bash
 # Run the bot (once implemented)
-poetry run python -m src.bot.main
+uv run python -m src.bot.main
 ```
 
 ---
@@ -148,7 +148,7 @@ voice-life-journal/
 ├── tests/
 │   ├── unit/        # Unit tests
 │   └── integration/ # Integration tests
-├── pyproject.toml   # Poetry configuration
+├── pyproject.toml   # Project configuration (uv)
 ├── .env.example     # Environment variables template
 └── README.md        # Project documentation
 ```
@@ -185,19 +185,22 @@ voice-life-journal/
 
 ## 🐛 Common Issues
 
-### Poetry not found
+### uv not found
 ```bash
-# Add Poetry to PATH
+# Add uv to PATH (if installed via curl)
 export PATH="$HOME/.local/bin:$PATH"
+
+# Or reinstall via Homebrew
+brew install uv
 ```
 
 ### Pre-commit hooks failing
 ```bash
 # Update hooks
-poetry run pre-commit autoupdate
+uv run pre-commit autoupdate
 
 # Clear cache and retry
-poetry run pre-commit clean
+uv run pre-commit clean
 ```
 
 ### Tests failing
@@ -206,7 +209,7 @@ poetry run pre-commit clean
 cat .env
 
 # Ensure dependencies are installed
-poetry install --with dev
+uv sync
 ```
 
 ---

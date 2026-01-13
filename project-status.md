@@ -71,7 +71,6 @@
 | 2026-01-13 | Follow AI Coding Course principles | Vibe Coding, Small Contexts, Contracts First |
 | 2026-01-13 | Create project-status.md, agents.md, README.md, CLAUDE.md | Documentation-as-Code: source of truth for context and vision |
 | 2026-01-13 | **Python 3.11+ as tech stack** | pytest mandatory, OpenAI SDK, aiogram 3.x, rapid MVP, concise code |
-| 2026-01-13 | Poetry for dependency management | Modern Python packaging, lockfile, dev dependencies separation |
 | 2026-01-13 | Pre-commit hooks with conventional commits | Enforce code quality and commit standards automatically |
 | 2026-01-13 | aiogram 3.x for Telegram bot | Modern async framework, router-based handlers, clean architecture |
 | 2026-01-13 | Long polling over webhooks | Simpler for MVP, no HTTPS setup required, easier local development |
