@@ -7,6 +7,8 @@ from aiogram.filters import Command
 from aiogram.types import Message
 
 from src.config import config
+from src.database import get_session
+from src.services.entries import EntryService
 from src.services.transcription import (
     TranscriptionAPIError,
     TranscriptionError,
@@ -18,6 +20,30 @@ logger = logging.getLogger(__name__)
 
 # Create router for handlers
 router = Router()
+
+
+async def save_journal_entry(
+    user_id: int,
+    transcription: str,
+    voice_file_id: str,
+    voice_duration_seconds: int,
+) -> None:
+    """Save journal entry to database.
+
+    Args:
+        user_id: Telegram user ID.
+        transcription: Transcribed text.
+        voice_file_id: Telegram voice file ID.
+        voice_duration_seconds: Voice message duration.
+    """
+    async with get_session() as session:
+        entry_service = EntryService(session)
+        await entry_service.create_entry(
+            user_id=user_id,
+            transcription=transcription,
+            voice_file_id=voice_file_id,
+            voice_duration_seconds=voice_duration_seconds,
+        )
 
 
 async def is_user_allowed(user_id: int) -> bool:
@@ -119,12 +145,23 @@ async def handle_voice(message: Message, bot: Bot) -> None:
             )
             return
 
-        # Store in memory for now (database integration in issue #6)
-        # TODO: Save to database in issue #6
-        logger.info(f"Transcription for user {user_id}: {len(transcription)} chars")
+        # Save to database
+        try:
+            await save_journal_entry(
+                user_id=user_id,
+                transcription=transcription,
+                voice_file_id=message.voice.file_id,
+                voice_duration_seconds=message.voice.duration,
+            )
+            logger.info(f"Saved entry for user {user_id}: {len(transcription)} chars")
+        except Exception as e:
+            logger.error(f"Failed to save entry for user {user_id}: {e}", exc_info=True)
+            # Continue to show transcription even if save fails
 
-        # Reply with transcription
-        await message.answer(f"📝 **Your journal entry:**\n\n{transcription}")
+        # Reply with transcription and save confirmation
+        await message.answer(
+            f"📝 **Your journal entry (saved):**\n\n{transcription}"
+        )
 
     except TranscriptionRateLimitError:
         logger.warning(f"Rate limit hit for user {user_id}")

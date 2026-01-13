@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from aiogram.types import Message, User, Voice
 
-from src.bot.handlers import cmd_start, handle_text, handle_voice, is_user_allowed
+from src.bot.handlers import cmd_start, handle_text, handle_voice, is_user_allowed, save_journal_entry
 from src.services.transcription import (
     TranscriptionAPIError,
     TranscriptionError,
@@ -188,6 +188,58 @@ class TestVoiceMessageHandler:
 
         call_args = mock_voice_message.answer.call_args
         assert "failed to download" in call_args[0][0].lower()
+
+    @pytest.mark.asyncio
+    async def test_voice_message_saved_to_database(
+        self, mock_voice_message: Message, mock_bot: MagicMock
+    ) -> None:
+        """
+        BDD Test: Given voice message transcribed, When processing complete,
+        Then entry is saved to database with correct data.
+        """
+        test_transcription = "This is my journal entry for today."
+
+        mock_save = AsyncMock()
+
+        with patch(
+            "src.bot.handlers.whisper_service.transcribe",
+            new_callable=AsyncMock,
+            return_value=test_transcription,
+        ), patch(
+            "src.bot.handlers.save_journal_entry",
+            mock_save,
+        ):
+            await handle_voice(mock_voice_message, mock_bot)
+
+        # Verify entry was saved with correct data
+        mock_save.assert_called_once_with(
+            user_id=mock_voice_message.from_user.id,
+            transcription=test_transcription,
+            voice_file_id=mock_voice_message.voice.file_id,
+            voice_duration_seconds=mock_voice_message.voice.duration,
+        )
+
+    @pytest.mark.asyncio
+    async def test_voice_message_confirms_save(
+        self, mock_voice_message: Message, mock_bot: MagicMock
+    ) -> None:
+        """
+        BDD Test: Given entry saved to database, When sending confirmation,
+        Then user sees save confirmation in response.
+        """
+        with patch(
+            "src.bot.handlers.whisper_service.transcribe",
+            new_callable=AsyncMock,
+            return_value="Test entry content",
+        ), patch(
+            "src.bot.handlers.save_journal_entry",
+            new_callable=AsyncMock,
+        ):
+            await handle_voice(mock_voice_message, mock_bot)
+
+        # Verify response includes save confirmation
+        call_args = mock_voice_message.answer.call_args[0][0]
+        assert "saved" in call_args.lower()
 
 
 class TestTextMessageHandler:
