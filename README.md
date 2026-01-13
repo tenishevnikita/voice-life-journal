@@ -68,18 +68,26 @@ The bot:
 
 ## 🛠 How: Technical Architecture
 
-### Stack (TBD in Issue #3)
-**Option A: TypeScript (Node.js)**
-- ✅ Strong typing
-- ✅ Excellent Telegram bot ecosystem (grammY, Telegraf)
-- ✅ Easy deployment (Vercel, Railway, fly.io)
+### Stack ✅ Decided: Python 3.11+
 
-**Option B: Python**
-- ✅ Simpler for rapid prototyping
-- ✅ Great AI/ML libraries
-- ✅ python-telegram-bot or aiogram
+**Decision:** Python 3.11+ with modern async ecosystem
 
-**Decision pending:** See issue #3
+**Rationale:**
+- ✅ **pytest mandatory** (per CLAUDE.md constitution)
+- ✅ **OpenAI Python SDK** - native Whisper API integration
+- ✅ **aiogram 3.x** - modern async Telegram bot framework
+- ✅ **Rapid MVP** - faster development (Happiness First)
+- ✅ **Concise code** - better for Small Contexts principle
+- ✅ **Strong typing** - Python 3.11+ type hints + mypy
+
+**Core Stack:**
+- **Bot:** aiogram 3.x (async Telegram framework)
+- **Transcription:** OpenAI Python SDK (Whisper API)
+- **Database:** SQLAlchemy 2.0 + Alembic (async ORM + migrations)
+- **Testing:** pytest + pytest-asyncio + pytest-cov
+- **Code Quality:** black, ruff, mypy, pre-commit hooks
+
+See [DEVELOPMENT.md](./DEVELOPMENT.md) for setup instructions.
 
 ### Core Components
 
@@ -92,7 +100,7 @@ The bot:
        ▼
 ┌─────────────────┐
 │  Telegram Bot   │  ← Receives messages, handles commands
-│  (grammY/aiogram)│
+│   (aiogram 3.x) │
 └────────┬────────┘
          │
          ├─→ /start, /summary  → Command Handlers
@@ -114,18 +122,21 @@ The bot:
 
 ### Data Model (Draft)
 
-```typescript
-interface JournalEntry {
-  id: string;              // UUID
-  userId: number;          // Telegram user ID
-  createdAt: Date;         // Timestamp
-  voiceFileId?: string;    // Telegram file ID (optional)
-  transcription: string;   // Whisper output
-  sentiment?: {            // Future: LLM analysis
-    mood: string;
-    score: number;
-  };
-}
+```python
+from datetime import datetime
+from typing import Optional
+from uuid import UUID
+
+class JournalEntry:
+    """Voice journal entry model."""
+
+    id: UUID                      # Unique entry ID
+    user_id: int                  # Telegram user ID
+    created_at: datetime          # Timestamp
+    voice_file_id: Optional[str]  # Telegram file ID (optional)
+    transcription: str            # Whisper output
+    sentiment: Optional[dict]     # Future: LLM analysis
+                                  # {"mood": str, "score": float}
 ```
 
 ---
@@ -198,20 +209,22 @@ This project follows **AI Coding Course** methodology.
 
 ```
 voice-life-journal/
-├── docs/
-│   ├── project-status.md    # Roadmap, milestones, current status
-│   └── agents.md            # AI agent roles and workflows
 ├── src/
-│   ├── bot/                 # Telegram bot handlers
-│   ├── services/            # Whisper, database, etc.
-│   └── types/               # TypeScript types / data models
+│   ├── bot/                 # Telegram bot handlers (aiogram)
+│   ├── services/            # External services (Whisper, database)
+│   └── models/              # Data models (SQLAlchemy)
 ├── tests/
-│   ├── unit/
-│   └── integration/
+│   ├── unit/                # Unit tests (pytest)
+│   └── integration/         # Integration tests
 ├── CLAUDE.md                # AI Coding Constitution
-├── .env.example
-├── .gitignore
-└── README.md                # You are here
+├── DEVELOPMENT.md           # Developer setup guide
+├── README.md                # Project overview (you are here)
+├── project-status.md        # Roadmap and current status
+├── agents.md                # AI agent roles
+├── pyproject.toml           # Poetry dependencies
+├── .env.example             # Environment variables template
+├── .gitignore               # Git ignore rules
+└── .pre-commit-config.yaml  # Git hooks configuration
 ```
 
 ---
