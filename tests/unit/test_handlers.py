@@ -1,11 +1,16 @@
 """Unit tests for bot handlers."""
 
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 from aiogram.types import Message, User, Voice
 
 from src.bot.handlers import cmd_start, handle_text, handle_voice, is_user_allowed
+from src.services.transcription import (
+    TranscriptionAPIError,
+    TranscriptionError,
+    TranscriptionRateLimitError,
+)
 
 
 class TestUserAuthorization:
@@ -62,26 +67,35 @@ class TestVoiceMessageHandler:
     """Test voice message handler."""
 
     @pytest.mark.asyncio
-    async def test_voice_message_acknowledged(self, mock_voice_message: Message) -> None:
-        """Test that voice message is acknowledged."""
-        await handle_voice(mock_voice_message)
+    async def test_voice_message_transcribed(
+        self, mock_voice_message: Message, mock_bot: MagicMock
+    ) -> None:
+        """Test that voice message is transcribed and returned."""
+        with patch(
+            "src.bot.handlers.whisper_service.transcribe",
+            new_callable=AsyncMock,
+            return_value="This is a test transcription.",
+        ):
+            await handle_voice(mock_voice_message, mock_bot)
 
         # Should react with emoji
         mock_voice_message.react.assert_called_once()
 
-        # Should send acknowledgment message
+        # Should send transcription
         mock_voice_message.answer.assert_called_once()
         call_args = mock_voice_message.answer.call_args
-        assert "got your voice message" in call_args[0][0].lower()
+        assert "test transcription" in call_args[0][0].lower()
 
     @pytest.mark.asyncio
-    async def test_voice_message_too_large(self, mock_voice_message: Message) -> None:
+    async def test_voice_message_too_large(
+        self, mock_voice_message: Message, mock_bot: MagicMock
+    ) -> None:
         """Test that oversized voice messages are rejected."""
         # Set file size to 25MB (exceeds 20MB limit)
         if mock_voice_message.voice:
             mock_voice_message.voice.file_size = 25 * 1024 * 1024
 
-        await handle_voice(mock_voice_message)
+        await handle_voice(mock_voice_message, mock_bot)
 
         # Should send rejection message
         mock_voice_message.answer.assert_called_once()
@@ -92,14 +106,88 @@ class TestVoiceMessageHandler:
         mock_voice_message.react.assert_not_called()
 
     @pytest.mark.asyncio
-    async def test_voice_message_unauthorized_user(self, mock_voice_message: Message) -> None:
+    async def test_voice_message_unauthorized_user(
+        self, mock_voice_message: Message, mock_bot: MagicMock
+    ) -> None:
         """Test that unauthorized users cannot send voice messages."""
         with patch("src.bot.handlers.config.allowed_user_ids", [99999999]):
-            await handle_voice(mock_voice_message)
+            await handle_voice(mock_voice_message, mock_bot)
 
             mock_voice_message.answer.assert_called_once()
             call_args = mock_voice_message.answer.call_args
             assert "not authorized" in call_args[0][0].lower()
+
+    @pytest.mark.asyncio
+    async def test_voice_message_empty_transcription(
+        self, mock_voice_message: Message, mock_bot: MagicMock
+    ) -> None:
+        """Test handling of empty transcription result."""
+        with patch(
+            "src.bot.handlers.whisper_service.transcribe",
+            new_callable=AsyncMock,
+            return_value="",
+        ):
+            await handle_voice(mock_voice_message, mock_bot)
+
+        call_args = mock_voice_message.answer.call_args
+        assert "couldn't detect" in call_args[0][0].lower()
+
+    @pytest.mark.asyncio
+    async def test_voice_message_rate_limit_error(
+        self, mock_voice_message: Message, mock_bot: MagicMock
+    ) -> None:
+        """Test handling of rate limit error."""
+        with patch(
+            "src.bot.handlers.whisper_service.transcribe",
+            new_callable=AsyncMock,
+            side_effect=TranscriptionRateLimitError("Rate limit"),
+        ):
+            await handle_voice(mock_voice_message, mock_bot)
+
+        call_args = mock_voice_message.answer.call_args
+        assert "too many requests" in call_args[0][0].lower()
+
+    @pytest.mark.asyncio
+    async def test_voice_message_api_error(
+        self, mock_voice_message: Message, mock_bot: MagicMock
+    ) -> None:
+        """Test handling of API error."""
+        with patch(
+            "src.bot.handlers.whisper_service.transcribe",
+            new_callable=AsyncMock,
+            side_effect=TranscriptionAPIError("API error"),
+        ):
+            await handle_voice(mock_voice_message, mock_bot)
+
+        call_args = mock_voice_message.answer.call_args
+        assert "temporarily unavailable" in call_args[0][0].lower()
+
+    @pytest.mark.asyncio
+    async def test_voice_message_transcription_error(
+        self, mock_voice_message: Message, mock_bot: MagicMock
+    ) -> None:
+        """Test handling of general transcription error."""
+        with patch(
+            "src.bot.handlers.whisper_service.transcribe",
+            new_callable=AsyncMock,
+            side_effect=TranscriptionError("Transcription failed"),
+        ):
+            await handle_voice(mock_voice_message, mock_bot)
+
+        call_args = mock_voice_message.answer.call_args
+        assert "failed to transcribe" in call_args[0][0].lower()
+
+    @pytest.mark.asyncio
+    async def test_voice_message_download_failed(
+        self, mock_voice_message: Message, mock_bot: MagicMock
+    ) -> None:
+        """Test handling of failed file download."""
+        mock_bot.download_file = AsyncMock(return_value=None)
+
+        await handle_voice(mock_voice_message, mock_bot)
+
+        call_args = mock_voice_message.answer.call_args
+        assert "failed to download" in call_args[0][0].lower()
 
 
 class TestTextMessageHandler:
