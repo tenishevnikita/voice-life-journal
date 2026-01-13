@@ -431,3 +431,30 @@ class TestSummaryCommand:
         assert "AAA..." in call_args
         # Original long text should not be fully present
         assert long_text not in call_args
+
+    @pytest.mark.asyncio
+    async def test_summary_command_period_month(self, mock_message: Message) -> None:
+        """Test /summary month calculates correct date range."""
+        mock_message.text = "/summary month"
+
+        mock_command = MagicMock()
+        mock_command.args = "month"
+
+        mock_entry_service = MagicMock()
+        mock_entry_service.get_entries_by_date_range = AsyncMock(return_value=[])
+
+        with patch("src.bot.handlers.get_session") as mock_get_session:
+            mock_session = MagicMock()
+            mock_get_session.return_value.__aenter__.return_value = mock_session
+
+            with patch("src.bot.handlers.EntryService", return_value=mock_entry_service):
+                await cmd_summary(mock_message, mock_command)
+
+        # Verify date range passed to service
+        call_kwargs = mock_entry_service.get_entries_by_date_range.call_args[1]
+        start_date = call_kwargs["start_date"]
+        end_date = call_kwargs["end_date"]
+
+        # Should be last 30 days
+        assert (end_date - start_date).days >= 29  # Allow for time drift
+        assert (end_date - start_date).days <= 31
