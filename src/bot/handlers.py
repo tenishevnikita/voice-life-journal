@@ -1,13 +1,18 @@
 """Telegram bot message handlers."""
 
 import logging
-from typing import Optional
 
-from aiogram import Router
+from aiogram import Bot, Router
 from aiogram.filters import Command
 from aiogram.types import Message
 
 from src.config import config
+from src.services.transcription import (
+    TranscriptionAPIError,
+    TranscriptionError,
+    TranscriptionRateLimitError,
+    whisper_service,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,8 +63,8 @@ Just send me a voice message anytime, and I'll:
 
 
 @router.message(lambda message: message.voice is not None)
-async def handle_voice(message: Message) -> None:
-    """Handle voice messages."""
+async def handle_voice(message: Message, bot: Bot) -> None:
+    """Handle voice messages and transcribe them using Whisper API."""
     user_id = message.from_user.id if message.from_user else None
     username = message.from_user.username if message.from_user else "Unknown"
 
@@ -86,13 +91,62 @@ async def handle_voice(message: Message) -> None:
         )
         return
 
-    # For now, just acknowledge receipt
-    # TODO: Integrate Whisper transcription in issue #5
+    # React to show we're processing
     await message.react([{"type": "emoji", "emoji": "👂"}])
-    await message.answer(
-        "🎧 Got your voice message! "
-        "(Transcription coming soon in the next update)"
-    )
+
+    try:
+        # Download voice file from Telegram
+        file = await bot.get_file(message.voice.file_id)
+        file_data = await bot.download_file(file.file_path)
+
+        if file_data is None:
+            logger.error(f"Failed to download voice file from {user_id}")
+            await message.answer("❌ Failed to download voice message. Please try again.")
+            return
+
+        # Read bytes from BytesIO object
+        audio_bytes = file_data.read()
+
+        logger.debug(f"Downloaded voice file: {len(audio_bytes)} bytes")
+
+        # Transcribe using Whisper
+        transcription = await whisper_service.transcribe(audio_bytes)
+
+        if not transcription:
+            await message.answer(
+                "🤔 I couldn't detect any speech in your voice message. "
+                "Please try again with clearer audio."
+            )
+            return
+
+        # Store in memory for now (database integration in issue #6)
+        # TODO: Save to database in issue #6
+        logger.info(f"Transcription for user {user_id}: {len(transcription)} chars")
+
+        # Reply with transcription
+        await message.answer(f"📝 **Your journal entry:**\n\n{transcription}")
+
+    except TranscriptionRateLimitError:
+        logger.warning(f"Rate limit hit for user {user_id}")
+        await message.answer(
+            "⏳ Too many requests. Please wait a moment and try again."
+        )
+    except TranscriptionAPIError as e:
+        logger.error(f"API error for user {user_id}: {e}")
+        await message.answer(
+            "🔧 Transcription service is temporarily unavailable. "
+            "Please try again in a few minutes."
+        )
+    except TranscriptionError as e:
+        logger.error(f"Transcription error for user {user_id}: {e}")
+        await message.answer(
+            "❌ Failed to transcribe your voice message. Please try again."
+        )
+    except Exception as e:
+        logger.error(f"Unexpected error processing voice from {user_id}: {e}", exc_info=True)
+        await message.answer(
+            "❌ Something went wrong. Please try again later."
+        )
 
 
 @router.message(lambda message: message.text is not None)
