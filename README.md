@@ -276,20 +276,56 @@ voice-life-journal/
 
 ## 🔒 Security & Privacy
 
-**Paranoia Mode Enabled:**
+**Paranoia Mode Enabled:** We don't trust anyone. All entry points are validated.
 
-- 🔐 All API keys in environment variables (never in code)
-- ✅ Input validation on all Telegram messages
-- 🛡 SQL injection protection (prepared statements)
-- 📏 File size limits on voice uploads
-- 🚦 Rate limiting on bot endpoints
-- 🔍 No sensitive data in logs
-- 🌐 HTTPS for webhooks (if used)
+### Security Measures
 
-**Privacy:**
-- Your journal entries are stored securely
-- No data sharing with third parties
-- You own your data (export anytime)
+✅ **Secrets Protection**
+- All API keys and tokens in environment variables (`.env` file)
+- `.env` files in `.gitignore` (never committed to git)
+- No hardcoded secrets in source code
+- Configuration validation on startup
+
+✅ **Input Validation**
+- User ID authorization whitelist (optional `ALLOWED_USER_IDS`)
+- Voice file size limits (configurable `MAX_VOICE_FILE_SIZE_MB`, default: 20MB)
+- Period parameter validation for `/summary` command (whitelist: today/week/month)
+- Transcription text validation (non-empty, sanitized)
+
+✅ **SQL Injection Protection**
+- SQLAlchemy ORM with parameterized queries
+- No string formatting in SQL queries
+- All database operations use prepared statements
+
+✅ **Logging Security**
+- No API keys or tokens in logs
+- User messages not logged (only metadata)
+- Database URLs logged without credentials
+- Only file sizes logged, not content
+
+✅ **File Upload Security**
+- Size validation before download (prevents memory exhaustion)
+- Only voice messages accepted (Telegram validates format)
+- Temporary files cleaned up after processing
+
+### Privacy
+
+- 🔐 Your journal entries are stored locally (SQLite) or in your own database
+- 🚫 No data sharing with third parties
+- 📦 You own your data 100%
+- 🗑 Delete entries anytime (future: `/delete` command)
+
+### Security Best Practices
+
+For deployment, we recommend:
+- Use `ALLOWED_USER_IDS` to whitelist authorized users
+- Set `MAX_VOICE_FILE_SIZE_MB` based on your needs (default: 20MB)
+- Use environment-specific `.env` files (`.env.production`, `.env.staging`)
+- Enable HTTPS for webhook mode (if using webhooks instead of polling)
+- Regular database backups
+- Monitor logs for unauthorized access attempts
+
+See [SECURITY.md](./SECURITY.md) for detailed security documentation and vulnerability reporting.
 
 ---
 

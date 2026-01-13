@@ -286,7 +286,7 @@ async def handle_text(message: Message) -> None:
     user_id = message.from_user.id if message.from_user else None
     username = message.from_user.username if message.from_user else "Unknown"
 
-    logger.info(f"Received text message from {user_id} ({username}): {message.text}")
+    logger.info(f"Received text message from {user_id} ({username})")
 
     if user_id and not await is_user_allowed(user_id):
         await message.answer("🚫 Sorry, you are not authorized to use this bot.")
