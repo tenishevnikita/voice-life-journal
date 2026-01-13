@@ -2,7 +2,7 @@
 
 **Last Updated:** 2026-01-13
 **Current Phase:** 🏗 MVP Bot Development
-**Overall Progress:** 🟢 50% (4/8 milestones)
+**Overall Progress:** 🟢 50% (3/6 milestones)
 
 ---
 
@@ -15,7 +15,8 @@
 - ✅ Issue #2: Project documentation setup (COMPLETED)
 - ✅ Issue #3: Project structure and tech stack selection (COMPLETED)
 - ✅ Issue #4: Telegram bot initialization (COMPLETED)
-- 🔄 Issue #5: Whisper API integration (NEXT)
+- ✅ Issue #5: Whisper API integration (COMPLETED)
+- 🔄 Issue #6: Database setup (NEXT)
 
 ---
 
@@ -26,9 +27,9 @@
 - [x] #2 Documentation structure (project-status.md, agents.md, README.md, CLAUDE.md)
 - [x] #3 Tech stack selection (Python 3.11+) and project scaffolding
 
-### Phase 2: MVP Bot (Issues #4-6) - 🔄 In Progress (33%)
+### Phase 2: MVP Bot (Issues #4-6) - 🔄 In Progress (66%)
 - [x] #4 Telegram bot initialization (commands, message handling)
-- [ ] #5 Whisper API integration for voice transcription
+- [x] #5 Whisper API integration for voice transcription
 - [ ] #6 Database setup and journal entry persistence
 
 ### Phase 3: User Features (Issue #7) - ETA: Value Addition
@@ -46,7 +47,7 @@
 |-----------|--------|------------|
 | **M1:** Documentation & Structure | ✅ Complete | 100% |
 | **M2:** Working Telegram Bot | ✅ Complete | 100% |
-| **M3:** Voice Transcription | ⏳ Planned | 0% |
+| **M3:** Voice Transcription | ✅ Complete | 100% |
 | **M4:** Data Persistence | ⏳ Planned | 0% |
 | **M5:** Summary Features | ⏳ Planned | 0% |
 | **M6:** Production Ready | ⏳ Planned | 0% |
@@ -71,6 +72,8 @@
 | 2026-01-13 | Pre-commit hooks with conventional commits | Enforce code quality and commit standards automatically |
 | 2026-01-13 | aiogram 3.x for Telegram bot | Modern async framework, router-based handlers, clean architecture |
 | 2026-01-13 | Long polling over webhooks | Simpler for MVP, no HTTPS setup required, easier local development |
+| 2026-01-13 | uv for dependency management | Faster than Poetry, modern Python packaging, PEP 621 compatible |
+| 2026-01-13 | WhisperService for transcription | Clean separation of concerns, easy to mock in tests, retry-capable |
 
 ---
 
@@ -91,5 +94,6 @@
 4. ✅ ~~Initialize Telegram bot with aiogram (#4)~~ **DONE**
 5. ✅ ~~Implement /start command handler (#4)~~ **DONE**
 6. ✅ ~~Setup voice message reception (#4)~~ **DONE**
-7. Integrate Whisper API for transcription (#5)
+7. ✅ ~~Integrate Whisper API for transcription (#5)~~ **DONE**
 8. Setup database and save entries (#6)
+9. Implement summary commands (#7)
