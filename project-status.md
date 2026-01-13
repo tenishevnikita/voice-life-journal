@@ -1,28 +1,29 @@
 # 📊 Project Status: Voice Life Journal
 
 **Last Updated:** 2026-01-13
-**Current Phase:** 🏗 Foundation - Documentation & Architecture
-**Overall Progress:** 🟡 20% (2/8 milestones)
+**Current Phase:** 🏗 Foundation - Complete, Moving to MVP
+**Overall Progress:** 🟡 30% (3/8 milestones)
 
 ---
 
 ## 🎯 Current Sprint
 
-**Goal:** Setup project foundation (documentation, structure, tech stack)
+**Goal:** Build MVP Telegram bot with voice transcription
 
 **Active Tasks:**
 - ✅ Issue #1: Project idea and vision documented
 - ✅ Issue #2: Project documentation setup (COMPLETED)
-- 🔄 Issue #3: Project structure and tech stack selection (NEXT)
+- ✅ Issue #3: Project structure and tech stack selection (COMPLETED)
+- 🔄 Issue #4: Telegram bot initialization (NEXT)
 
 ---
 
 ## 📈 Roadmap
 
-### Phase 1: Foundation (Issues #2-3) - ETA: Setup
+### Phase 1: Foundation (Issues #2-3) - ✅ COMPLETE
 - [x] #1 Project vision defined
-- [x] #2 Documentation structure (project-status.md, agents.md, README.md)
-- [ ] #3 Tech stack selection and project scaffolding
+- [x] #2 Documentation structure (project-status.md, agents.md, README.md, CLAUDE.md)
+- [x] #3 Tech stack selection (Python 3.11+) and project scaffolding
 
 ### Phase 2: MVP Bot (Issues #4-6) - ETA: Core Functionality
 - [ ] #4 Telegram bot initialization (commands, message handling)
@@ -43,7 +44,7 @@
 | Milestone | Status | Completion |
 |-----------|--------|------------|
 | **M1:** Documentation & Structure | ✅ Complete | 100% |
-| **M2:** Working Telegram Bot | ⏳ Planned | 0% |
+| **M2:** Working Telegram Bot | 🔄 In Progress | 0% |
 | **M3:** Voice Transcription | ⏳ Planned | 0% |
 | **M4:** Data Persistence | ⏳ Planned | 0% |
 | **M5:** Summary Features | ⏳ Planned | 0% |
@@ -63,7 +64,10 @@
 |------|----------|-----------|
 | 2026-01-13 | Use GitHub Issues for task management | Transparent, integrated with git workflow |
 | 2026-01-13 | Follow AI Coding Course principles | Vibe Coding, Small Contexts, Contracts First |
-| 2026-01-13 | Create project-status.md, agents.md, README.md | Documentation-as-Code: source of truth for context and vision |
+| 2026-01-13 | Create project-status.md, agents.md, README.md, CLAUDE.md | Documentation-as-Code: source of truth for context and vision |
+| 2026-01-13 | **Python 3.11+ as tech stack** | pytest mandatory, OpenAI SDK, aiogram 3.x, rapid MVP, concise code |
+| 2026-01-13 | Poetry for dependency management | Modern Python packaging, lockfile, dev dependencies separation |
+| 2026-01-13 | Pre-commit hooks with conventional commits | Enforce code quality and commit standards automatically |
 
 ---
 
@@ -79,6 +83,8 @@
 ## 🔄 Next Actions
 
 1. ✅ ~~Complete project documentation (#2)~~ **DONE**
-2. Choose tech stack (TypeScript vs Python) (#3)
-3. Initialize project structure (#3)
-4. Start Telegram bot implementation (#4)
+2. ✅ ~~Choose tech stack (Python 3.11+) (#3)~~ **DONE**
+3. ✅ ~~Initialize project structure (#3)~~ **DONE**
+4. Initialize Telegram bot with aiogram (#4)
+5. Implement /start command handler (#4)
+6. Setup voice message reception (#4)
