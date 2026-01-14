@@ -1,11 +1,12 @@
 """Telegram bot message handlers."""
 
+import io
 import logging
 from datetime import UTC, datetime, timedelta
 
 from aiogram import Bot, Router
 from aiogram.filters import Command, CommandObject
-from aiogram.types import Message
+from aiogram.types import BufferedInputFile, Message
 
 from src.config import config
 from src.database import get_session
@@ -15,6 +16,13 @@ from src.services.analysis import (
     analysis_service,
 )
 from src.services.entries import EntryService
+from src.services.export import (
+    ExportFormat,
+    ExportService,
+    get_export_filename,
+    parse_export_format,
+)
+from src.services.stats import StatsService, get_period_dates
 from src.services.transcription import (
     TranscriptionAPIError,
     TranscriptionError,
@@ -106,9 +114,8 @@ Just send me a voice message anytime, and I'll:
 **Commands:**
 /start - Show this message
 /summary [period] - Get summary of your entries
-  • today - entries from today
-  • week - last 7 days (default)
-  • month - last 30 days
+/stats [period] - Get mood statistics (week/month/all)
+/export [format] - Export your data (csv/md/json)
 
 **Ready?** Just send me a voice message and let your thoughts flow! 🌊
 """
@@ -203,6 +210,131 @@ async def cmd_summary(message: Message, command: CommandObject) -> None:
         logger.error(f"Error fetching summary for user {user_id}: {e}", exc_info=True)
         await message.answer(
             "❌ Failed to fetch summary. Please try again later."
+        )
+
+
+@router.message(Command("stats"))
+async def cmd_stats(message: Message, command: CommandObject) -> None:
+    """Handle /stats command to show mood statistics.
+
+    Usage: /stats [period]
+    Period options: week, month, all (default: week)
+    """
+    user_id = message.from_user.id if message.from_user else None
+    username = message.from_user.username if message.from_user else "Unknown"
+
+    logger.info(f"User {user_id} ({username}) requested stats")
+
+    if user_id and not await is_user_allowed(user_id):
+        await message.answer("🚫 Sorry, you are not authorized to use this bot.")
+        logger.warning(f"Unauthorized user {user_id} ({username}) tried to access stats")
+        return
+
+    # Parse period argument (default: week)
+    period = "week"
+    if command.args:
+        period = command.args.strip().lower()
+        if period not in ["week", "month", "all"]:
+            await message.answer(
+                "⚠️ Неверный период. Используй: `week`, `month` или `all`\n\n"
+                "Пример: `/stats week`",
+                parse_mode="Markdown",
+            )
+            return
+
+    try:
+        start_date, end_date, period_label = get_period_dates(period)
+
+        async with get_session() as session:
+            stats_service = StatsService(session)
+            stats = await stats_service.get_stats(
+                user_id=user_id,
+                start_date=start_date,
+                end_date=end_date,
+            )
+
+        if not stats:
+            await message.answer(
+                "📭 У тебя пока нет записей. Отправь голосовое сообщение!"
+            )
+            return
+
+        stats_message = stats_service.format_stats_message(stats, period_label)
+        await message.answer(stats_message)
+        logger.info(f"Sent stats to user {user_id} for period {period}")
+
+    except Exception as e:
+        logger.error(f"Error fetching stats for user {user_id}: {e}", exc_info=True)
+        await message.answer(
+            "❌ Не удалось получить статистику. Попробуй позже."
+        )
+
+
+@router.message(Command("export"))
+async def cmd_export(message: Message, command: CommandObject) -> None:
+    """Handle /export command to export user entries.
+
+    Usage: /export [format]
+    Format options: csv, md, json (default: csv)
+    """
+    user_id = message.from_user.id if message.from_user else None
+    username = message.from_user.username if message.from_user else "Unknown"
+
+    logger.info(f"User {user_id} ({username}) requested export")
+
+    if user_id and not await is_user_allowed(user_id):
+        await message.answer("🚫 Sorry, you are not authorized to use this bot.")
+        logger.warning(f"Unauthorized user {user_id} ({username}) tried to export")
+        return
+
+    # Parse format argument (default: csv)
+    format_arg = command.args.strip().lower() if command.args else None
+    export_format = parse_export_format(format_arg)
+
+    if export_format is None:
+        await message.answer(
+            "⚠️ Неверный формат. Используй: `csv`, `md` или `json`\n\n"
+            "Пример: `/export csv`",
+            parse_mode="Markdown",
+        )
+        return
+
+    try:
+        # Send "generating" message for large exports
+        await message.answer("📦 Генерирую файл...")
+
+        async with get_session() as session:
+            export_service = ExportService(session)
+            file_bytes = await export_service.export_entries(
+                user_id=user_id,
+                export_format=export_format,
+            )
+
+        if len(file_bytes) == 0 or (
+            export_format == ExportFormat.JSON
+            and b'"total_entries": 0' in file_bytes
+        ):
+            await message.answer(
+                "📭 У тебя пока нет записей для экспорта. "
+                "Отправь голосовое сообщение!"
+            )
+            return
+
+        filename = get_export_filename(export_format)
+        document = BufferedInputFile(file_bytes, filename=filename)
+
+        await message.answer_document(
+            document=document,
+            caption=f"📁 Твой экспорт готов! ({filename})",
+        )
+        logger.info(
+            f"Sent export to user {user_id}: {filename}, {len(file_bytes)} bytes"
+        )
+
+    except Exception as e:
+        logger.error(f"Error exporting for user {user_id}: {e}", exc_info=True)
+        await message.answer(
+            "❌ Не удалось создать экспорт. Попробуй позже."
         )
 
 

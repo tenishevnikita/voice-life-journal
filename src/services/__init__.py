@@ -10,6 +10,19 @@ from src.services.analysis import (
     analysis_service,
 )
 from src.services.entries import EntryService
+from src.services.export import (
+    ExportFormat,
+    ExportService,
+    get_export_filename,
+    parse_export_format,
+)
+from src.services.stats import (
+    StatsResult,
+    StatsService,
+    get_period_dates,
+    get_trend_emoji,
+    mood_to_bar,
+)
 from src.services.transcription import (
     TranscriptionAPIError,
     TranscriptionError,
@@ -27,6 +40,15 @@ __all__ = [
     "AnalysisService",
     "analysis_service",
     "EntryService",
+    "ExportFormat",
+    "ExportService",
+    "get_export_filename",
+    "get_period_dates",
+    "get_trend_emoji",
+    "mood_to_bar",
+    "parse_export_format",
+    "StatsResult",
+    "StatsService",
     "TranscriptionAPIError",
     "TranscriptionError",
     "TranscriptionRateLimitError",
