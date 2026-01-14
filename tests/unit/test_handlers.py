@@ -209,6 +209,10 @@ class TestVoiceMessageHandler:
         ), patch(
             "src.bot.handlers.save_journal_entry",
             mock_save,
+        ), patch(
+            "src.bot.handlers.analysis_service.analyze",
+            new_callable=AsyncMock,
+            return_value=None,  # Short text - no analysis
         ):
             await handle_voice(mock_voice_message, mock_bot)
 
@@ -218,6 +222,7 @@ class TestVoiceMessageHandler:
             transcription=test_transcription,
             voice_file_id=mock_voice_message.voice.file_id,
             voice_duration_seconds=mock_voice_message.voice.duration,
+            analysis_result=None,
         )
 
     @pytest.mark.asyncio
@@ -235,12 +240,16 @@ class TestVoiceMessageHandler:
         ), patch(
             "src.bot.handlers.save_journal_entry",
             new_callable=AsyncMock,
+        ), patch(
+            "src.bot.handlers.analysis_service.analyze",
+            new_callable=AsyncMock,
+            return_value=None,  # Short text - no analysis
         ):
             await handle_voice(mock_voice_message, mock_bot)
 
-        # Verify response includes save confirmation
+        # Verify response includes save confirmation (Russian or English)
         call_args = mock_voice_message.answer.call_args[0][0]
-        assert "saved" in call_args.lower()
+        assert "записано" in call_args.lower() or "saved" in call_args.lower()
 
 
 class TestTextMessageHandler:

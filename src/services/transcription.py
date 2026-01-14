@@ -3,9 +3,8 @@
 import logging
 import tempfile
 from pathlib import Path
-from typing import Optional
 
-from openai import AsyncOpenAI, APIError, APIConnectionError, RateLimitError
+from openai import APIConnectionError, APIError, AsyncOpenAI, RateLimitError
 
 from src.config import config
 
@@ -35,9 +34,9 @@ class WhisperService:
 
     def __init__(
         self,
-        api_key: Optional[str] = None,
-        model: Optional[str] = None,
-        base_url: Optional[str] = None,
+        api_key: str | None = None,
+        model: str | None = None,
+        base_url: str | None = None,
     ) -> None:
         """Initialize Whisper service.
 
@@ -59,7 +58,7 @@ class WhisperService:
 
         self._client = AsyncOpenAI(api_key=self._api_key, base_url=self._base_url)
 
-    async def transcribe(self, audio_data: bytes, language: Optional[str] = None) -> str:
+    async def transcribe(self, audio_data: bytes, language: str | None = None) -> str:
         """Transcribe audio data to text.
 
         Args:

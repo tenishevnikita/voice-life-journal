@@ -14,6 +14,10 @@ os.environ.setdefault("LOG_LEVEL", "DEBUG")
 os.environ.setdefault("ALLOWED_USER_IDS", "")
 os.environ.setdefault("WHISPER_MODEL", "whisper-1")
 os.environ.setdefault("MAX_VOICE_FILE_SIZE_MB", "20")
+os.environ.setdefault("ANALYSIS_MODEL", "gpt-4o-mini")
+os.environ.setdefault("ANALYSIS_MIN_WORDS", "10")
+os.environ.setdefault("ANALYSIS_TIMEOUT", "30")
+os.environ.setdefault("ANALYSIS_MAX_TAGS", "5")
 
 import pytest
 from aiogram import Bot, Dispatcher
@@ -34,6 +38,10 @@ def mock_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ALLOWED_USER_IDS", "")
     monkeypatch.setenv("WHISPER_MODEL", "whisper-1")
     monkeypatch.setenv("MAX_VOICE_FILE_SIZE_MB", "20")
+    monkeypatch.setenv("ANALYSIS_MODEL", "gpt-4o-mini")
+    monkeypatch.setenv("ANALYSIS_MIN_WORDS", "10")
+    monkeypatch.setenv("ANALYSIS_TIMEOUT", "30")
+    monkeypatch.setenv("ANALYSIS_MAX_TAGS", "5")
 
 
 @pytest.fixture

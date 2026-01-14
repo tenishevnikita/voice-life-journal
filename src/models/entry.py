@@ -1,14 +1,12 @@
 """Journal entry model."""
 
 import uuid
-from typing import Optional
 
-from sqlalchemy import BigInteger, Index, Text, String
-from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy import BigInteger, Index, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.types import JSON
 
-from src.models.base import Base, GUID, TimestampMixin
+from src.models.base import GUID, Base, TimestampMixin
 
 
 class Entry(Base, TimestampMixin):
@@ -33,14 +31,25 @@ class Entry(Base, TimestampMixin):
         Text,
         nullable=False,
     )
-    voice_file_id: Mapped[Optional[str]] = mapped_column(
+    voice_file_id: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )
-    voice_duration_seconds: Mapped[Optional[int]] = mapped_column(
+    voice_duration_seconds: Mapped[int | None] = mapped_column(
         nullable=True,
     )
-    sentiment: Mapped[Optional[dict]] = mapped_column(
+    sentiment: Mapped[dict | None] = mapped_column(
+        JSON,
+        nullable=True,
+    )
+    summary: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+    mood_score: Mapped[int | None] = mapped_column(
+        nullable=True,
+    )
+    tags: Mapped[list | None] = mapped_column(
         JSON,
         nullable=True,
     )

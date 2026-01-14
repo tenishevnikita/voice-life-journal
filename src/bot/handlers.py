@@ -1,7 +1,7 @@
 """Telegram bot message handlers."""
 
 import logging
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from aiogram import Bot, Router
 from aiogram.filters import Command, CommandObject
@@ -9,6 +9,11 @@ from aiogram.types import Message
 
 from src.config import config
 from src.database import get_session
+from src.services.analysis import (
+    AnalysisError,
+    AnalysisResult,
+    analysis_service,
+)
 from src.services.entries import EntryService
 from src.services.transcription import (
     TranscriptionAPIError,
@@ -23,11 +28,26 @@ logger = logging.getLogger(__name__)
 router = Router()
 
 
+def _get_mood_emoji(mood_score: int) -> str:
+    """Return emoji based on mood score."""
+    if mood_score >= 9:
+        return "🤩"
+    elif mood_score >= 7:
+        return "😊"
+    elif mood_score >= 5:
+        return "😐"
+    elif mood_score >= 3:
+        return "😔"
+    else:
+        return "😢"
+
+
 async def save_journal_entry(
     user_id: int,
     transcription: str,
     voice_file_id: str,
     voice_duration_seconds: int,
+    analysis_result: AnalysisResult | None = None,
 ) -> None:
     """Save journal entry to database.
 
@@ -36,6 +56,7 @@ async def save_journal_entry(
         transcription: Transcribed text.
         voice_file_id: Telegram voice file ID.
         voice_duration_seconds: Voice message duration.
+        analysis_result: Optional LLM analysis result.
     """
     async with get_session() as session:
         entry_service = EntryService(session)
@@ -44,6 +65,9 @@ async def save_journal_entry(
             transcription=transcription,
             voice_file_id=voice_file_id,
             voice_duration_seconds=voice_duration_seconds,
+            summary=analysis_result.summary if analysis_result else None,
+            mood_score=analysis_result.mood_score if analysis_result else None,
+            tags=analysis_result.tags if analysis_result else None,
         )
 
 
@@ -122,7 +146,7 @@ async def cmd_summary(message: Message, command: CommandObject) -> None:
             return
 
     # Calculate date range based on period
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if period == "today":
         start_date = now.replace(hour=0, minute=0, second=0, microsecond=0)
         end_date = now
@@ -243,6 +267,19 @@ async def handle_voice(message: Message, bot: Bot) -> None:
             )
             return
 
+        # Analyze transcription with LLM (graceful degradation on failure)
+        analysis_result: AnalysisResult | None = None
+        try:
+            analysis_result = await analysis_service.analyze(transcription)
+            if analysis_result:
+                logger.info(
+                    f"Analysis for user {user_id}: mood={analysis_result.mood_score}, "
+                    f"tags={analysis_result.tags}"
+                )
+        except AnalysisError as e:
+            logger.warning(f"Analysis failed for user {user_id}, continuing without: {e}")
+            # Continue without analysis - graceful degradation
+
         # Save to database
         try:
             await save_journal_entry(
@@ -250,16 +287,35 @@ async def handle_voice(message: Message, bot: Bot) -> None:
                 transcription=transcription,
                 voice_file_id=message.voice.file_id,
                 voice_duration_seconds=message.voice.duration,
+                analysis_result=analysis_result,
             )
             logger.info(f"Saved entry for user {user_id}: {len(transcription)} chars")
         except Exception as e:
             logger.error(f"Failed to save entry for user {user_id}: {e}", exc_info=True)
             # Continue to show transcription even if save fails
 
-        # Reply with transcription and save confirmation
-        await message.answer(
-            f"📝 **Your journal entry (saved):**\n\n{transcription}"
-        )
+        # Reply with transcription and analysis
+        if analysis_result:
+            # Build beautiful response card
+            mood_emoji = _get_mood_emoji(analysis_result.mood_score)
+            tags_str = ""
+            if analysis_result.tags:
+                tags_str = " ".join(f"#{tag}" for tag in analysis_result.tags)
+
+            response = (
+                f"✅ Записано!\n\n"
+                f"📊 Твоё настроение: {analysis_result.mood_score}/10 {mood_emoji}\n"
+            )
+            if tags_str:
+                response += f"🏷 Теги: {tags_str}\n"
+            response += f"\n💭 Кратко: {analysis_result.summary}"
+
+            await message.answer(response)
+        else:
+            # Fallback to simple response (short text or analysis failed)
+            await message.answer(
+                f"📝 **Записано:**\n\n{transcription}"
+            )
 
     except TranscriptionRateLimitError:
         logger.warning(f"Rate limit hit for user {user_id}")

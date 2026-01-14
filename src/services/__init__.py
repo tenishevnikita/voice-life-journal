@@ -1,5 +1,14 @@
-"""External services: Whisper transcription, database, etc."""
+"""External services: Whisper transcription, LLM analysis, database, etc."""
 
+from src.services.analysis import (
+    AnalysisAPIError,
+    AnalysisError,
+    AnalysisParseError,
+    AnalysisRateLimitError,
+    AnalysisResult,
+    AnalysisService,
+    analysis_service,
+)
 from src.services.entries import EntryService
 from src.services.transcription import (
     TranscriptionAPIError,
@@ -10,6 +19,13 @@ from src.services.transcription import (
 )
 
 __all__ = [
+    "AnalysisAPIError",
+    "AnalysisError",
+    "AnalysisParseError",
+    "AnalysisRateLimitError",
+    "AnalysisResult",
+    "AnalysisService",
+    "analysis_service",
     "EntryService",
     "TranscriptionAPIError",
     "TranscriptionError",

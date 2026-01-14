@@ -3,7 +3,6 @@
 import logging
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -28,9 +27,12 @@ class EntryService:
         self,
         user_id: int,
         transcription: str,
-        voice_file_id: Optional[str] = None,
-        voice_duration_seconds: Optional[int] = None,
-        sentiment: Optional[dict] = None,
+        voice_file_id: str | None = None,
+        voice_duration_seconds: int | None = None,
+        sentiment: dict | None = None,
+        summary: str | None = None,
+        mood_score: int | None = None,
+        tags: list[str] | None = None,
     ) -> Entry:
         """Create a new journal entry.
 
@@ -40,6 +42,9 @@ class EntryService:
             voice_file_id: Optional Telegram voice file ID.
             voice_duration_seconds: Optional voice duration in seconds.
             sentiment: Optional sentiment analysis data.
+            summary: Optional LLM-generated summary.
+            mood_score: Optional mood score (1-10).
+            tags: Optional list of tags.
 
         Returns:
             Created Entry object.
@@ -58,6 +63,9 @@ class EntryService:
             voice_file_id=voice_file_id,
             voice_duration_seconds=voice_duration_seconds,
             sentiment=sentiment,
+            summary=summary,
+            mood_score=mood_score,
+            tags=tags,
         )
         self._session.add(entry)
         await self._session.commit()
@@ -66,7 +74,7 @@ class EntryService:
         logger.info(f"Created entry {entry.id} for user {user_id}")
         return entry
 
-    async def get_entry_by_id(self, entry_id: uuid.UUID) -> Optional[Entry]:
+    async def get_entry_by_id(self, entry_id: uuid.UUID) -> Entry | None:
         """Get entry by ID.
 
         Args:
