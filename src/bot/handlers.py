@@ -211,8 +211,12 @@ async def handle_voice(message: Message, bot: Bot) -> None:
         )
         return
 
-    # React to show we're processing
-    await message.react([{"type": "emoji", "emoji": "👂"}])
+    # React to show we're processing (ignore if reactions not supported)
+    try:
+        await message.react([{"type": "emoji", "emoji": "👂"}])
+    except Exception:
+        # Reactions may not be supported in all chat types
+        pass
 
     try:
         # Download voice file from Telegram
