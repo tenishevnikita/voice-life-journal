@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, MagicMock
 # Set environment variables before importing application modules
 os.environ.setdefault("TELEGRAM_BOT_TOKEN", "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11")
 os.environ.setdefault("OPENAI_API_KEY", "sk-test1234567890")
+os.environ.setdefault("OPENAI_BASE_URL", "")
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 os.environ.setdefault("ENVIRONMENT", "test")
 os.environ.setdefault("LOG_LEVEL", "DEBUG")
@@ -26,6 +27,7 @@ def mock_env_vars(monkeypatch: pytest.MonkeyPatch) -> None:
     """Mock environment variables for tests."""
     monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11")
     monkeypatch.setenv("OPENAI_API_KEY", "sk-test1234567890")
+    monkeypatch.setenv("OPENAI_BASE_URL", "")
     monkeypatch.setenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
     monkeypatch.setenv("ENVIRONMENT", "test")
     monkeypatch.setenv("LOG_LEVEL", "DEBUG")

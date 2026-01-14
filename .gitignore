@@ -48,6 +48,11 @@ htmlcov/
 .pytest_cache/
 .tox/
 
+# Test fixtures (audio files not committed)
+tests/fixtures/*.ogg
+tests/fixtures/*.mp3
+tests/fixtures/*.wav
+
 # MyPy
 .mypy_cache/
 .dmypy.json

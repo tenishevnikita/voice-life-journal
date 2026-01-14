@@ -12,6 +12,7 @@ class TestConfig:
         """Test that configuration loads correctly from environment."""
         monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test_token_123")
         monkeypatch.setenv("OPENAI_API_KEY", "test_api_key_456")
+        monkeypatch.setenv("OPENAI_BASE_URL", "https://custom-proxy.com/v1")
         monkeypatch.setenv("DATABASE_URL", "sqlite:///test.db")
         monkeypatch.setenv("ENVIRONMENT", "production")
         monkeypatch.setenv("LOG_LEVEL", "ERROR")
@@ -23,6 +24,7 @@ class TestConfig:
 
         assert config.telegram_bot_token == "test_token_123"
         assert config.openai_api_key == "test_api_key_456"
+        assert config.openai_base_url == "https://custom-proxy.com/v1"
         assert config.database_url == "sqlite:///test.db"
         assert config.environment == "production"
         assert config.log_level == "ERROR"
@@ -50,6 +52,7 @@ class TestConfig:
         """Test that config uses defaults when optional vars not set."""
         monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test_token")
         monkeypatch.setenv("OPENAI_API_KEY", "test_key")
+        monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
         monkeypatch.delenv("DATABASE_URL", raising=False)
         monkeypatch.delenv("ENVIRONMENT", raising=False)
         monkeypatch.delenv("LOG_LEVEL", raising=False)
@@ -59,6 +62,7 @@ class TestConfig:
 
         config = Config.from_env()
 
+        assert config.openai_base_url is None
         assert config.database_url == "sqlite+aiosqlite:///./voice_journal.db"
         assert config.environment == "development"
         assert config.log_level == "INFO"
@@ -84,3 +88,23 @@ class TestConfig:
 
         with pytest.raises(ValueError, match="Invalid ALLOWED_USER_IDS"):
             Config.from_env()
+
+    def test_config_empty_openai_base_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that empty OPENAI_BASE_URL results in None."""
+        monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test_token")
+        monkeypatch.setenv("OPENAI_API_KEY", "test_key")
+        monkeypatch.setenv("OPENAI_BASE_URL", "")
+
+        config = Config.from_env()
+
+        assert config.openai_base_url is None
+
+    def test_config_whitespace_openai_base_url(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Test that whitespace-only OPENAI_BASE_URL results in None."""
+        monkeypatch.setenv("TELEGRAM_BOT_TOKEN", "test_token")
+        monkeypatch.setenv("OPENAI_API_KEY", "test_key")
+        monkeypatch.setenv("OPENAI_BASE_URL", "   ")
+
+        config = Config.from_env()
+
+        assert config.openai_base_url is None

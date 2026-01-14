@@ -64,8 +64,12 @@ uv run pre-commit run --all-files
 
 ## 🧪 Running Tests
 
+### Unit Tests (Fast, No API Calls)
+
+Unit tests use mocks and run quickly without making real API calls:
+
 ```bash
-# Run all tests
+# Run all unit tests
 uv run pytest
 
 # Run with coverage
@@ -77,6 +81,59 @@ uv run pytest tests/unit/test_database.py
 # Run with verbose output
 uv run pytest -v
 ```
+
+### Integration Tests (Real API Calls)
+
+Integration tests make real API calls to external services and are **disabled by default**.
+
+**Prerequisites:**
+1. Real OpenAI API key (not `sk-test...`)
+2. Audio test fixtures in `tests/fixtures/`
+3. Set `RUN_INTEGRATION_TESTS=1` environment variable
+
+**Setup:**
+
+```bash
+# 1. Ensure you have a real API key
+export OPENAI_API_KEY=sk-proj-your-real-key-here
+
+# 2. Create audio fixtures (see tests/fixtures/README.md)
+# You need to create these files manually:
+# - tests/fixtures/audio_en_sample.ogg (< 1MB, English speech)
+# - tests/fixtures/audio_ru_sample.ogg (< 1MB, Russian speech)
+
+# 3. Enable integration tests
+export RUN_INTEGRATION_TESTS=1
+
+# 4. Run integration tests
+uv run pytest tests/integration/ -v
+```
+
+**Testing Custom base_url:**
+
+If you use a custom OpenAI API endpoint (proxy, aggregator):
+
+```bash
+# Set custom base URL
+export OPENAI_BASE_URL=https://your-proxy.com/v1
+
+# Run integration tests with custom URL
+RUN_INTEGRATION_TESTS=1 uv run pytest tests/integration/ -v
+```
+
+**Cost Warning:** Integration tests make real API calls. Each test costs approximately:
+- Whisper API: ~$0.006 per minute of audio
+- With small fixtures (< 10 seconds each): ~$0.01-0.02 per full test run
+
+**Why Integration Tests?**
+
+Unit tests with mocks don't guarantee that:
+- Real API calls work
+- Custom `OPENAI_BASE_URL` functions correctly
+- API contract hasn't changed
+- Audio file format is compatible
+
+Integration tests catch these issues before production.
 
 ---
 

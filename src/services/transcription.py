@@ -33,16 +33,31 @@ class TranscriptionRateLimitError(TranscriptionError):
 class WhisperService:
     """Service for transcribing audio using OpenAI Whisper API."""
 
-    def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        model: Optional[str] = None,
+        base_url: Optional[str] = None,
+    ) -> None:
         """Initialize Whisper service.
 
         Args:
             api_key: OpenAI API key. Defaults to config value.
             model: Whisper model to use. Defaults to config value.
+            base_url: Custom base URL for OpenAI API. Defaults to config value.
+                     If None, uses OpenAI default (https://api.openai.com/v1).
         """
         self._api_key = api_key or config.openai_api_key
         self._model = model or config.whisper_model
-        self._client = AsyncOpenAI(api_key=self._api_key)
+        self._base_url = base_url if base_url is not None else config.openai_base_url
+
+        # Log the base URL being used (for debugging)
+        if self._base_url:
+            logger.info(f"Initializing Whisper service with custom base URL: {self._base_url}")
+        else:
+            logger.debug("Initializing Whisper service with default OpenAI base URL")
+
+        self._client = AsyncOpenAI(api_key=self._api_key, base_url=self._base_url)
 
     async def transcribe(self, audio_data: bytes, language: Optional[str] = None) -> str:
         """Transcribe audio data to text.

@@ -19,6 +19,7 @@ class Config:
 
     # OpenAI
     openai_api_key: str
+    openai_base_url: Optional[str]
 
     # Database
     database_url: str
@@ -45,6 +46,11 @@ class Config:
         if not openai_api_key:
             raise ValueError("OPENAI_API_KEY environment variable is required")
 
+        openai_base_url = os.getenv("OPENAI_BASE_URL")
+        # Convert empty string to None
+        if not openai_base_url or not openai_base_url.strip():
+            openai_base_url = None
+
         database_url = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///./voice_journal.db")
         environment = os.getenv("ENVIRONMENT", "development")
         log_level = os.getenv("LOG_LEVEL", "INFO")
@@ -68,6 +74,7 @@ class Config:
         return cls(
             telegram_bot_token=telegram_bot_token,
             openai_api_key=openai_api_key,
+            openai_base_url=openai_base_url,
             database_url=database_url,
             environment=environment,
             log_level=log_level,

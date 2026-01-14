@@ -172,7 +172,7 @@ uv run python -m src.bot.main
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run unit tests (fast, no API calls)
 uv run pytest
 
 # Run with coverage report
@@ -180,9 +180,12 @@ uv run pytest --cov=src --cov-report=html
 
 # Run specific test file
 uv run pytest tests/unit/test_handlers.py -v
+
+# Run integration tests (requires real OPENAI_API_KEY, makes real API calls)
+RUN_INTEGRATION_TESTS=1 uv run pytest tests/integration/ -v
 ```
 
-See [DEVELOPMENT.md](./DEVELOPMENT.md) for detailed development guide.
+**Note:** Integration tests are disabled by default as they make real API calls and cost money. See [DEVELOPMENT.md](./DEVELOPMENT.md) for details on setting up integration tests.
 
 ---
 

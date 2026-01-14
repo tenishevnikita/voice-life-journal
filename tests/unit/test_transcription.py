@@ -141,6 +141,7 @@ class TestWhisperService:
         with patch("src.services.transcription.config") as mock_config:
             mock_config.openai_api_key = "config-api-key"
             mock_config.whisper_model = "whisper-1"
+            mock_config.openai_base_url = None
 
             service = WhisperService()
 
@@ -153,3 +154,46 @@ class TestWhisperService:
 
         assert service._api_key == "custom-key"
         assert service._model == "custom-model"
+
+    def test_service_initialization_with_base_url(self) -> None:
+        """Test service with custom base_url."""
+        service = WhisperService(
+            api_key="test-key", model="whisper-1", base_url="https://custom-proxy.com/v1"
+        )
+
+        assert service._base_url == "https://custom-proxy.com/v1"
+        # OpenAI client adds trailing slash to base_url
+        assert str(service._client.base_url) == "https://custom-proxy.com/v1/"
+
+    def test_service_initialization_base_url_from_config(self) -> None:
+        """Test that service uses base_url from config."""
+        with patch("src.services.transcription.config") as mock_config:
+            mock_config.openai_api_key = "config-api-key"
+            mock_config.whisper_model = "whisper-1"
+            mock_config.openai_base_url = "https://config-proxy.com/v1"
+
+            service = WhisperService()
+
+            assert service._base_url == "https://config-proxy.com/v1"
+
+    def test_service_initialization_base_url_priority(self) -> None:
+        """Test that constructor base_url has priority over config."""
+        with patch("src.services.transcription.config") as mock_config:
+            mock_config.openai_api_key = "config-api-key"
+            mock_config.whisper_model = "whisper-1"
+            mock_config.openai_base_url = "https://config-proxy.com/v1"
+
+            service = WhisperService(base_url="https://custom-proxy.com/v1")
+
+            assert service._base_url == "https://custom-proxy.com/v1"
+
+    def test_service_initialization_no_base_url(self) -> None:
+        """Test that service works without base_url (uses OpenAI default)."""
+        with patch("src.services.transcription.config") as mock_config:
+            mock_config.openai_api_key = "test-key"
+            mock_config.whisper_model = "whisper-1"
+            mock_config.openai_base_url = None
+
+            service = WhisperService()
+
+            assert service._base_url is None
